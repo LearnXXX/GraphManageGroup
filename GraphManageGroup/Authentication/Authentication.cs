@@ -20,6 +20,7 @@ namespace GraphManageGroup
            .Build();
             var builder = application.AcquireTokenInteractive(new List<string>() { "https://graph.microsoft.com/.default" });
            return builder.WithPrompt(promptType).ExecuteAsync().Result;
+           //return builder.WithAuthority(authorityUri.ToString()).WithExtraQueryParameters("site_id=501358&amp;display=popup").WithPrompt(promptType).ExecuteAsync().Result;
         }
 
     }

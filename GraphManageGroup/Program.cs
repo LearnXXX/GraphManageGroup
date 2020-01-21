@@ -17,18 +17,29 @@ namespace GraphManageGroup
 
         static void Main(string[] args)
         {
-            try
+            var tokenHelper = new TokenHelper();
+            while (true)
             {
-                Parser.Default.ParseArguments<Options>(args).WithParsed<Options>(o =>
+                bool failed = false;
+                try
                 {
-                    CheckArguments(o);
-                    GroupManagement groupManagement = new GroupManagement();
-                    groupManagement.Run(o);
-                });
-            }
-            catch (Exception e)
-            {
-                logger.Error($"An error occurred while run job, error: {e.ToString()}");
+                    System.Net.WebRequest.DefaultWebProxy = new System.Net.WebProxy("127.0.0.1", 8888);
+                    Parser.Default.ParseArguments<Options>(args).WithParsed<Options>(o =>
+                    {
+                        CheckArguments(o);
+                        GroupManagement groupManagement = new GroupManagement(tokenHelper);
+                        groupManagement.Run(o);
+                    });
+                }
+                catch (Exception e)
+                {
+                    failed = true;
+                    logger.Error($"An error occurred while run job, error: {e.ToString()}");
+                }
+                if (!failed)
+                {
+                    break;
+                }
             }
             LogManager.Flush(10 * 1000);
 

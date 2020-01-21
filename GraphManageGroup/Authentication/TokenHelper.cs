@@ -15,11 +15,14 @@ namespace GraphManageGroup
 
         public GraphServiceClient GetGraphServiceClient()
         {
-            return new GraphServiceClient(string.Format("{0}/v1.0", GraphUri), new DelegateAuthenticationProvider(a =>
-            {
-                a.Headers.Add("Authorization", "Bearer " + TokenProvider.GetAccessToken(GraphUri).AccessToken);
-                return Task.FromResult(0);
-            }));
+            var graphServiceClient = new GraphServiceClient(string.Format("{0}/v1.0", GraphUri), new DelegateAuthenticationProvider(a =>
+             {
+                 a.Headers.Add("Authorization", "Bearer " + TokenProvider.GetAccessToken(GraphUri).AccessToken);
+                 return Task.FromResult(0);
+             }));
+            //Set timeout value
+            graphServiceClient.HttpProvider.OverallTimeout = TimeSpan.FromMinutes(5);
+            return graphServiceClient;
         }
 
         private TokenProvider TokenProvider

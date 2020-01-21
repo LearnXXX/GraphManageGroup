@@ -14,9 +14,9 @@ namespace GraphManageGroup
         private GraphServiceClient groupService;
         private List<User> allUsers;
         private static ILog logger = LogManager.GetLogger(typeof(GroupManagement));
-        public GroupManagement()
+        public GroupManagement(TokenHelper tokenHelper)
         {
-            groupService = new TokenHelper().GetGraphServiceClient();
+            groupService = tokenHelper.GetGraphServiceClient();
         }
 
         private Group TryGetGroupByName(string groupName)
@@ -48,7 +48,7 @@ namespace GraphManageGroup
                 var group = TryGetGroupByName(tempGroupName);
                 if (group == null)
                 {
-                    logger.Info($"Start to create group {tempGroupName}");
+                    logger.Info($"Start to create group {tempGroupName},{index}/{option.GroupCount}");
                     group = CreateGroup(tempGroupName);
                 }
 
@@ -73,11 +73,11 @@ namespace GraphManageGroup
                     AddMultiMembersToGroup(new Group { Id = option.GroupId }, option.MemberCount);
                     break;
                 case JobType.AddOwnerToGroup:
-                    AddMultiMembersToGroup(new Group { Id = option.GroupId }, option.OwnerCount);
+                    AddMultiOwnersToGroup(new Group { Id = option.GroupId }, option.OwnerCount);
                     break;
                 case JobType.AddOwnerAndMemberToGroup:
                     AddMultiMembersToGroup(new Group { Id = option.GroupId }, option.MemberCount);
-                    AddMultiMembersToGroup(new Group { Id = option.GroupId }, option.OwnerCount);
+                    AddMultiOwnersToGroup(new Group { Id = option.GroupId }, option.OwnerCount);
                     break;
             }
         }
@@ -147,9 +147,10 @@ namespace GraphManageGroup
                 if (!containUsers.ContainsKey(user.Id))
                 {
                     request.AddAsync(user).Wait();
+                    index++;
                 }
-
-                if (++index == userCount)
+                //logger.Info($"Add {user.DisplayName} successfully.");
+                if (index >= userCount)
                 { break; }
             }
         }
@@ -169,7 +170,6 @@ namespace GraphManageGroup
             logger.Info($"Start to add members to group {group.Id}");
             var members = GetGroupMembers(group);
             var memberRequest = groupService.Groups[group.Id].Members.References.Request();
-
             AddUserToGroup(memberRequest, members, memberCount);
             logger.Info($"Finish add members to group {group.Id}");
         }
