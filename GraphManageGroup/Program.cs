@@ -23,7 +23,7 @@ namespace GraphManageGroup
                 bool failed = false;
                 try
                 {
-                    System.Net.WebRequest.DefaultWebProxy = new System.Net.WebProxy("127.0.0.1", 8888);
+                    //System.Net.WebRequest.DefaultWebProxy = new System.Net.WebProxy("127.0.0.1", 8888);
                     Parser.Default.ParseArguments<Options>(args).WithParsed<Options>(o =>
                     {
                         CheckArguments(o);

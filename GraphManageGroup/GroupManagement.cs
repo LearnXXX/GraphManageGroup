@@ -44,7 +44,7 @@ namespace GraphManageGroup
             for (int index = 0; index < option.GroupCount; index++)
             {
                 var tempGroupName = option.GroupName + index.ToString();
-
+                var users = this.AllofUsersWithOutGuest;
                 var group = TryGetGroupByName(tempGroupName);
                 if (group == null)
                 {
@@ -82,12 +82,14 @@ namespace GraphManageGroup
             }
         }
 
-        private List<User> GetAllUsers()
+        private List<User> GetAllUsersWithouGuest()
         {
             var users = new List<User>();
-            var currentPage = groupService.Users.Request().GetAsync().Result;
+            var select = "id,userPrincipalName,mail,userType";
+            var currentPage = groupService.Users.Request().Select(select).GetAsync().Result;
             GetRequestAllOfDatas(currentPage, users);
-            return users;
+            
+            return users.Where(user =>!string.Equals("Guest", user.UserType,StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         /// <summary>
@@ -107,13 +109,13 @@ namespace GraphManageGroup
             }
             return datas;
         }
-        private List<User> AllofUsers
+        private List<User> AllofUsersWithOutGuest
         {
             get
             {
                 if (allUsers == null)
                 {
-                    allUsers = GetAllUsers();
+                    allUsers = GetAllUsersWithouGuest();
                 }
                 return allUsers;
             }
@@ -142,7 +144,7 @@ namespace GraphManageGroup
             }
 
             int index = containUsers.Count;
-            foreach (var user in AllofUsers)
+            foreach (var user in AllofUsersWithOutGuest)
             {
                 if (!containUsers.ContainsKey(user.Id))
                 {
