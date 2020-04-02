@@ -59,7 +59,57 @@ namespace GraphManageGroup
                 }
             }
         }
-
+        private bool IsExistTeam(Group group)
+        {
+            try
+            {
+                groupService.Groups[group.Id].Team.Request().GetAsync().Wait();
+            }
+            catch (Exception e) when (e.InnerException != null && e.InnerException is ServiceException && ((ServiceException)e.InnerException).StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return false;
+            }
+            return true;
+        }
+        public void CreateTeamForGroups(Options option)
+        {
+            for (int index = 0; index < option.GroupCount; index++)
+            {
+                var tempGroupName = option.GroupName + index.ToString();
+                var group = TryGetGroupByName(tempGroupName);
+                if (group == null)
+                {
+                    logger.Info($"Start to create group {tempGroupName},{index}/{option.GroupCount}");
+                    group = CreateGroup(tempGroupName);
+                }
+                if (!IsExistTeam(group))
+                {
+                    var team = new Team
+                    {
+                        MemberSettings = new TeamMemberSettings
+                        {
+                            AllowCreateUpdateChannels = true,
+                            ODataType = null,
+                        },
+                        MessagingSettings = new TeamMessagingSettings
+                        {
+                            AllowUserEditMessages = true,
+                            AllowUserDeleteMessages = true,
+                            ODataType = null,
+                        },
+                        FunSettings = new TeamFunSettings
+                        {
+                            AllowGiphy = true,
+                            GiphyContentRating = GiphyRatingType.Strict,
+                            ODataType = null,
+                        },
+                        ODataType = null,
+                    };
+                    groupService.Groups[group.Id].Team.Request().PutAsync(team).Wait();
+                    logger.Info($"Create team for group {tempGroupName}");
+                }
+            }
+        }
 
         public void Run(Options option)
         {
@@ -79,6 +129,9 @@ namespace GraphManageGroup
                     AddMultiMembersToGroup(new Group { Id = option.GroupId }, option.MemberCount);
                     AddMultiOwnersToGroup(new Group { Id = option.GroupId }, option.OwnerCount);
                     break;
+                case JobType.CreateTeamForGroups:
+                    CreateTeamForGroups(option);
+                    break;
             }
         }
 
@@ -88,8 +141,8 @@ namespace GraphManageGroup
             var select = "id,userPrincipalName,mail,userType";
             var currentPage = groupService.Users.Request().Select(select).GetAsync().Result;
             GetRequestAllOfDatas(currentPage, users);
-            
-            return users.Where(user =>!string.Equals("Guest", user.UserType,StringComparison.OrdinalIgnoreCase)).ToList();
+
+            return users.Where(user => !string.Equals("Guest", user.UserType, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
         /// <summary>
