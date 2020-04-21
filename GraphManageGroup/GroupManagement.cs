@@ -111,6 +111,14 @@ namespace GraphManageGroup
             }
         }
 
+        private List<Group> GetAllGroups()
+        {
+            List<Group> groups = new List<Group>();
+            var currentPage = groupService.Groups.Request().GetAsync().Result;
+            GetRequestAllOfDatas(currentPage, groups);
+            return groups;
+        }
+
         public void Run(Options option)
         {
             switch (option.Type)
@@ -132,6 +140,23 @@ namespace GraphManageGroup
                 case JobType.CreateTeamForGroups:
                     CreateTeamForGroups(option);
                     break;
+                case JobType.ChangeGroupsName:
+                    ChangeNameForGroups(option);
+                    break;
+            }
+        }
+
+        public void ChangeNameForGroups(Options option)
+        {
+            var groups = GetAllGroups();
+            var selectGroups = groups.FindAll(tempGroup => tempGroup.DisplayName.IndexOf(option.KeyWord, StringComparison.OrdinalIgnoreCase) >= 0);
+            int index = 1;
+            foreach (var group in selectGroups)
+            {
+                var updateGroup = new Group { DisplayName = $"{option.GroupName}{index}" };
+                groupService.Groups[group.Id].Request().UpdateAsync(updateGroup).Wait();
+                logger.Info($"Change group name from {group.DisplayName} to {updateGroup.DisplayName}");
+                index++;
             }
         }
 

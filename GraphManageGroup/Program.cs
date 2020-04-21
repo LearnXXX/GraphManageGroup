@@ -71,6 +71,11 @@ namespace GraphManageGroup
                     option.CheckOwnerCount();
                     option.CheckMemberCount();
                     break;
+                case JobType.ChangeGroupsName:
+                    option.CheckKeyWord();
+                    option.CheckGroupName();
+                    break;
+
             }
         }
     }
