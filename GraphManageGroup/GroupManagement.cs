@@ -25,6 +25,12 @@ namespace GraphManageGroup
             var groups = groupService.Groups.Request().Filter(filterString).GetAsync().Result;
             return groups.Count > 0 ? groups[0] : null;
         }
+        private Group TryGetGroupByDisplayName(string groupName)
+        {
+            string filterString = $"displayName  eq '{groupName}'";
+            var groups = groupService.Groups.Request().Filter(filterString).GetAsync().Result;
+            return groups.Count > 0 ? groups[0] : null;
+        }
 
         public Group CreateGroup(string groupName)
         {
@@ -143,21 +149,57 @@ namespace GraphManageGroup
                 case JobType.ChangeGroupsName:
                     ChangeNameForGroups(option);
                     break;
+                case JobType.RevertGroupsName:
+                    RevertNameForGroups();
+                    break;
+            }
+        }
+
+        public void RevertNameForGroups()
+        {
+            var groups = GetAllGroups();
+            foreach (var group in groups)
+            {
+                if (!string.Equals(group.DisplayName, group.MailNickname))
+                {
+                    try
+                    {
+                        var updateGroup = new Group { DisplayName = group.MailNickname };
+                        groupService.Groups[group.Id].Request().UpdateAsync(updateGroup).Wait();
+                        logger.Info($"Revert group name from {group.DisplayName} to {updateGroup.DisplayName}");
+                    }
+                    catch (Exception e)
+                    {
+                        logger.Warn($"An error occurred while revert group name from {group.DisplayName} to {group.MailNickname}, error: {e.ToString()}");
+                    }
+
+                }
             }
         }
 
         public void ChangeNameForGroups(Options option)
         {
-            var groups = GetAllGroups();
-            var selectGroups = groups.FindAll(tempGroup => tempGroup.DisplayName.IndexOf(option.KeyWord, StringComparison.OrdinalIgnoreCase) >= 0);
-            int index = 1;
-            foreach (var group in selectGroups)
+            for (int index = 0; index < option.GroupCount; index++)
             {
-                var updateGroup = new Group { DisplayName = $"{option.GroupName}{index}" };
-                groupService.Groups[group.Id].Request().UpdateAsync(updateGroup).Wait();
-                logger.Info($"Change group name from {group.DisplayName} to {updateGroup.DisplayName}");
-                index++;
+                var tempGroupName = option.KeyWord + index.ToString();
+                var group = TryGetGroupByDisplayName(tempGroupName);
+                if (group != null)
+                {
+                    var updateGroup = new Group { DisplayName = $"{option.GroupName}{index}" };
+                    groupService.Groups[group.Id].Request().UpdateAsync(updateGroup).Wait();
+                    logger.Info($"Change group name from {group.DisplayName} to {updateGroup.DisplayName}");
+                }
             }
+            //    var groups = GetAllGroups();
+            //var selectGroups = groups.FindAll(tempGroup => tempGroup.DisplayName.IndexOf(option.KeyWord, StringComparison.OrdinalIgnoreCase) >= 0);
+            //int index = 1;
+            //foreach (var group in selectGroups)
+            //{
+            //    var updateGroup = new Group { DisplayName = $"{option.GroupName}{index}" };
+            //    groupService.Groups[group.Id].Request().UpdateAsync(updateGroup).Wait();
+            //    logger.Info($"Change group name from {group.DisplayName} to {updateGroup.DisplayName}");
+            //    index++;
+            //}
         }
 
         private List<User> GetAllUsersWithouGuest()

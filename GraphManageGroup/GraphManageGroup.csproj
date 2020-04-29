@@ -87,6 +87,7 @@
   <ItemGroup>
     <Compile Include="Authentication\Authentication.cs" />
     <Compile Include="Config\Options.cs" />
+    <Compile Include="GraphRequestRetryHandler.cs" />
     <Compile Include="GroupManagement.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

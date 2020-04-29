@@ -17,6 +17,7 @@ namespace GraphManageGroup.Config
         AddOwnerAndMemberToGroup = 4,
         CreateTeamForGroups = 5,
         ChangeGroupsName = 6,
+        RevertGroupsName=7,
     }
     public class Options
     {

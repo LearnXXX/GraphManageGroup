@@ -74,6 +74,7 @@ namespace GraphManageGroup
                 case JobType.ChangeGroupsName:
                     option.CheckKeyWord();
                     option.CheckGroupName();
+                    option.CheckGroupCount();
                     break;
 
             }

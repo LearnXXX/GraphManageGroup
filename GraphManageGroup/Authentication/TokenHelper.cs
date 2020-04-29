@@ -1,6 +1,7 @@
 ﻿using Microsoft.Graph;
 using Microsoft.Identity.Client;
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace GraphManageGroup
@@ -19,9 +20,9 @@ namespace GraphManageGroup
              {
                  a.Headers.Add("Authorization", "Bearer " + TokenProvider.GetAccessToken(GraphUri).AccessToken);
                  return Task.FromResult(0);
-             }));
+             }), new HttpProvider(new GraphRequestRetryHandler(new HttpClientHandler()), true, new Serializer()) { OverallTimeout = TimeSpan.FromSeconds(10) });
             //Set timeout value
-            graphServiceClient.HttpProvider.OverallTimeout = TimeSpan.FromMinutes(5);
+            //graphServiceClient.HttpProvider.OverallTimeout = TimeSpan.FromMinutes(5);
             return graphServiceClient;
         }
 
