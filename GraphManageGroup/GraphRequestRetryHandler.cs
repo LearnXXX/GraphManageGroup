@@ -14,7 +14,7 @@ namespace GraphManageGroup
     {
         private static ILog logger = LogManager.GetLogger(typeof(GraphRequestRetryHandler));
 
-        private const int MaxRetries = 3;
+        private const int MaxRetries = 100;
 
         public GraphRequestRetryHandler(HttpMessageHandler innerHandler)
             : base(innerHandler)

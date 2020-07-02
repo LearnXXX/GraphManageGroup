@@ -23,7 +23,7 @@ namespace GraphManageGroup.Config
     {
         [Option('t', "Type", Required = true, HelpText = "Input type for job(CreateGroup=0,CreateGroupAndAddOwnerAndMember=1,AddOwnerToGroup=2,AddMemberToGroup=3,AddOwnerAndMemberToGroup=4)")]
         public JobType Type { get; set; }
-        [Option('t',"KeyWord",Required =false,HelpText ="Input key word to search group")]
+        [Option('k',"KeyWord",Required =false,HelpText ="Input key word to search group")]
         public string KeyWord { get; set; }
         [Option('n', "GroupName", Required = false, HelpText = "Input group name for CreateGroup job type")]
         public string GroupName { get; set; }
