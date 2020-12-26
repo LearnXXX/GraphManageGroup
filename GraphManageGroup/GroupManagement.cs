@@ -50,18 +50,25 @@ namespace GraphManageGroup
             for (int index = 0; index < option.GroupCount; index++)
             {
                 var tempGroupName = option.GroupName + index.ToString();
-                var users = this.AllofUsersWithOutGuest;
-                var group = TryGetGroupByName(tempGroupName);
-                if (group == null)
+                try
                 {
-                    logger.Info($"Start to create group {tempGroupName},{index}/{option.GroupCount}");
-                    group = CreateGroup(tempGroupName);
-                }
+                    var users = this.AllofUsersWithOutGuest;
+                    var group = TryGetGroupByName(tempGroupName);
+                    if (group == null)
+                    {
+                        logger.Info($"Start to create group {tempGroupName},{index}/{option.GroupCount}");
+                        group = CreateGroup(tempGroupName);
+                    }
 
-                if (option.Type == JobType.CreateGroupAndAddOwnerAndMember)
+                    if (option.Type == JobType.CreateGroupAndAddOwnerAndMember)
+                    {
+                        AddMultiOwnersToGroup(group, option.OwnerCount);
+                        AddMultiMembersToGroup(group, option.MemberCount);
+                    }
+                }
+                catch (Exception e)
                 {
-                    AddMultiOwnersToGroup(group, option.OwnerCount);
-                    AddMultiMembersToGroup(group, option.MemberCount);
+                    logger.Info($"Create group {tempGroupName} failed, error: {e.ToString()}");
                 }
             }
         }
