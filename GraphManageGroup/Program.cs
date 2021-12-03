@@ -18,7 +18,7 @@ namespace GraphManageGroup
         static void Main(string[] args)
         {
             var tokenHelper = new TokenHelper();
-            while (true)
+            //while (true)
             {
                 bool failed = false;
                 try
@@ -36,10 +36,10 @@ namespace GraphManageGroup
                     failed = true;
                     logger.Error($"An error occurred while run job, error: {e.ToString()}");
                 }
-                if (!failed)
-                {
-                    break;
-                }
+                //if (!failed)
+                //{
+                //    break;
+                //}
             }
             LogManager.Flush(10 * 1000);
 

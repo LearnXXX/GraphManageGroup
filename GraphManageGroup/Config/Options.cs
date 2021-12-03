@@ -18,6 +18,7 @@ namespace GraphManageGroup.Config
         CreateTeamForGroups = 5,
         ChangeGroupsName = 6,
         RevertGroupsName=7,
+        AddGuestUserToGroup=8,
     }
     public class Options
     {

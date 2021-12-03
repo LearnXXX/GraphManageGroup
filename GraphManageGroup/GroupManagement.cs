@@ -86,7 +86,7 @@ namespace GraphManageGroup
         }
         public void CreateTeamForGroups(Options option)
         {
-            for (int index = 0; index < option.GroupCount; index++)
+            for (int index = option.GroupCount; index > 0; index--)
             {
                 var tempGroupName = option.GroupName + index.ToString();
                 var group = TryGetGroupByName(tempGroupName);
@@ -94,36 +94,69 @@ namespace GraphManageGroup
                 {
                     logger.Info($"Start to create group {tempGroupName},{index}/{option.GroupCount}");
                     group = CreateGroup(tempGroupName);
+                    //System.Threading.Thread.Sleep(2*1000);
                 }
+
+                logger.Info($"Start to create team for group {tempGroupName}");
                 if (!IsExistTeam(group))
                 {
-                    var team = new Team
+                    int retryCount = 0;
+                    int maxRetryCount = 50;
+                    while (retryCount < maxRetryCount)
                     {
-                        MemberSettings = new TeamMemberSettings
+                        try
                         {
-                            AllowCreateUpdateChannels = true,
-                            ODataType = null,
-                        },
-                        MessagingSettings = new TeamMessagingSettings
+                            CreateTeamForGroup(group, tempGroupName);
+                            break;
+                        }
+                        catch (Exception)
                         {
-                            AllowUserEditMessages = true,
-                            AllowUserDeleteMessages = true,
-                            ODataType = null,
-                        },
-                        FunSettings = new TeamFunSettings
-                        {
-                            AllowGiphy = true,
-                            GiphyContentRating = GiphyRatingType.Strict,
-                            ODataType = null,
-                        },
-                        ODataType = null,
-                    };
-                    groupService.Groups[group.Id].Team.Request().PutAsync(team).Wait();
-                    logger.Info($"Create team for group {tempGroupName}");
+                            if (retryCount < maxRetryCount)
+                            //if (retryCount < maxRetryCount && e.InnerException != null && e.InnerException.Message.StartsWith("Code: NotFound"))
+                            {
+                                //if (retryCount == maxRetryCount-1)
+                                //{
+                                //    logger.Info($"Create team for group {tempGroupName} failed");
+                                //    throw;
+                                //}
+                                System.Threading.Thread.Sleep(1000);
+                            }
+                            else
+                            {
+                                throw;
+                            }
+                        }
+                        retryCount++;
+                    }
                 }
             }
         }
-
+        private void CreateTeamForGroup(Group group, string tempGroupName)
+        {
+            var team = new Team
+            {
+                MemberSettings = new TeamMemberSettings
+                {
+                    AllowCreateUpdateChannels = true,
+                    ODataType = null,
+                },
+                MessagingSettings = new TeamMessagingSettings
+                {
+                    AllowUserEditMessages = true,
+                    AllowUserDeleteMessages = true,
+                    ODataType = null,
+                },
+                FunSettings = new TeamFunSettings
+                {
+                    AllowGiphy = true,
+                    GiphyContentRating = GiphyRatingType.Strict,
+                    ODataType = null,
+                },
+                ODataType = null,
+            };
+            groupService.Groups[group.Id].Team.Request().PutAsync(team).Wait();
+            logger.Info($"Create team for group {tempGroupName} successfully");
+        }
         private List<Group> GetAllGroups()
         {
             List<Group> groups = new List<Group>();
@@ -158,6 +191,9 @@ namespace GraphManageGroup
                     break;
                 case JobType.RevertGroupsName:
                     RevertNameForGroups();
+                    break;
+                case JobType.AddGuestUserToGroup:
+                    AddMultiGuestUsersToGroup(option);
                     break;
             }
         }
@@ -209,6 +245,16 @@ namespace GraphManageGroup
             //}
         }
 
+        private List<User> GetAllGuestUsers()
+        {
+            var users = new List<User>();
+            var select = "id,userPrincipalName,mail,userType";
+            var currentPage = groupService.Users.Request().Select(select).GetAsync().Result;
+            GetRequestAllOfDatas(currentPage, users);
+
+            return users.Where(user => string.Equals("Guest", user.UserType, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
         private List<User> GetAllUsersWithouGuest()
         {
             var users = new List<User>();
@@ -247,6 +293,19 @@ namespace GraphManageGroup
                 return allUsers;
             }
         }
+
+        private List<User> AllGuestUsers
+        {
+            get
+            {
+                if (allUsers == null)
+                {
+                    allUsers = GetAllGuestUsers();
+                }
+                return allUsers;
+            }
+        }
+
         private Dictionary<string, DirectoryObject> GetGroupOwners(Group group)
         {
             var groupOwners = new List<DirectoryObject>();
@@ -263,7 +322,7 @@ namespace GraphManageGroup
             return groupOwners.ToDictionary(key => key.Id, value => value, StringComparer.OrdinalIgnoreCase);
         }
 
-        private void AddUserToGroup(dynamic request, Dictionary<string, DirectoryObject> containUsers, int userCount)
+        private void AddUserToGroup(dynamic request, Dictionary<string, DirectoryObject> containUsers, List<User> cacheUsers, int userCount)
         {
             if (containUsers.Count >= userCount)
             {
@@ -271,7 +330,7 @@ namespace GraphManageGroup
             }
 
             int index = containUsers.Count;
-            foreach (var user in AllofUsersWithOutGuest)
+            foreach (var user in cacheUsers)
             {
                 if (!containUsers.ContainsKey(user.Id))
                 {
@@ -284,22 +343,52 @@ namespace GraphManageGroup
             }
         }
 
+
+
         public void AddMultiOwnersToGroup(Group group, int ownerCount)
         {
             logger.Info($"Start to add owners to group {group.Id}");
             var owners = GetGroupOwners(group);
             var ownerRequest = groupService.Groups[group.Id].Owners.References.Request();
 
-            AddUserToGroup(ownerRequest, owners, ownerCount);
+            AddUserToGroup(ownerRequest, owners, AllofUsersWithOutGuest, ownerCount);
             logger.Info($"Finish add owners to group {group.Id}");
         }
+        public void AddMultiGuestUsersToGroup(Options option)
+        {
+            for (int index = 0; index < option.GroupCount; index++)
+            {
+                try
+                {
+                    var tempGroupName = option.GroupName + index.ToString();
+                    var group = TryGetGroupByName(tempGroupName);
+                    if (group == null)
+                    {
+                        logger.Info($"Can not find group with name: {tempGroupName}, skip this.");
+                        continue;
+                        logger.Info($"Start to create group {tempGroupName},{index}/{option.GroupCount}");
+                        group = CreateGroup(tempGroupName);
+                    }
+                    logger.Info($"Start to add members to group {group.Id}, group name: {group.DisplayName}");
+                    var members = GetGroupMembers(group);
+                    var memberRequest = groupService.Groups[group.Id].Members.References.Request();
+                    AddUserToGroup(memberRequest, members, AllGuestUsers, option.MemberCount);
+                    logger.Info($"Finish add members to group {group.Id}, group name: {group.DisplayName}");
+                }
+                catch (Exception e)
+                {
+                    logger.ErrorFormat("An error occurred while add guest user to group, index: {0}, error:{1}", index, e.ToString());
+                }
+            }
+        }
+
 
         public void AddMultiMembersToGroup(Group group, int memberCount)
         {
             logger.Info($"Start to add members to group {group.Id}");
             var members = GetGroupMembers(group);
             var memberRequest = groupService.Groups[group.Id].Members.References.Request();
-            AddUserToGroup(memberRequest, members, memberCount);
+            AddUserToGroup(memberRequest, members, AllofUsersWithOutGuest, memberCount);
             logger.Info($"Finish add members to group {group.Id}");
         }
 
